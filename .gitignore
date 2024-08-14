@@ -1,0 +1,9 @@
+### zig ###
+# Zig programming language
+
+zig/zig-cache/
+zig/zig-out/
+zig/build/
+zig/build-*/
+zig/docgen_tmp/
+zig/.zig-cache
