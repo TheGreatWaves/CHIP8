@@ -1,7 +1,7 @@
 // raylib-zig (c) Nikolas Wipper 2023
 
 // 35 opcodes, all two bytes long.
-const Opcode = enum(u16) {};
+var opcode: u16 = undefined;
 
 // NOTE: Data can be organized into an array later.
 
@@ -32,6 +32,38 @@ var sp: u16 = undefined;
 // Keypad keys.
 var key: [16]u16 = undefined;
 
+// Screen bitmap.
+var screen: [64 * 32]bool = undefined;
+
+pub fn initialize_chip_8() void {
+    I = 0; // Address.
+    opcode = 0; // Current opcode.
+
+    // Programs are expected to be loaded in, starting from 0x200, therefore
+    // the initial value of the program counter should be pointing there.
+    PC = 0x200;
+
+    // Initialize registers.
+    V = [_]u8{0} ** 16;
+
+    // Initialize memory.
+    memory = [_]u8{0} ** 4096;
+
+    // Initialize stack.
+    stack = [_]u16{0} ** 16;
+    sp = 0;
+
+    // Initialize key states.
+    key = [_]u16{0} ** 16;
+
+    // Initialize screen bitmap.
+    screen = [_]bool{false} ** (64 * 32);
+
+    // Initialize timers.
+    delay_timer = 0;
+    sound_timer = 0;
+}
+
 const rl = @import("raylib");
 
 pub fn main() anyerror!void {
@@ -44,6 +76,8 @@ pub fn main() anyerror!void {
     defer rl.closeWindow(); // Close window and OpenGL context
 
     rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
+
+    initialize_chip_8();
     //--------------------------------------------------------------------------------------
 
     // Main game loop
