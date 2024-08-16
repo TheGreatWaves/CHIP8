@@ -64,6 +64,9 @@ pub fn initialize_chip_8() void {
     sound_timer = 0;
 }
 
+pub fn fetch() void {
+    opcode = (memory[PC] << 8) | memory[PC + 1];
+}
 const rl = @import("raylib");
 
 pub fn main() anyerror!void {
