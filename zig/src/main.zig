@@ -1,5 +1,7 @@
 // raylib-zig (c) Nikolas Wipper 2023
 
+const std = @import("std");
+
 // 35 opcodes, all two bytes long.
 var opcode: u16 = undefined;
 
@@ -67,6 +69,36 @@ pub fn initialize_chip_8() void {
 pub fn fetch() void {
     opcode = (memory[PC] << 8) | memory[PC + 1];
 }
+
+pub fn play_sound() void {}
+
+pub fn update_timers() void {
+    if (delay_timer > 0) {
+        delay_timer -= 1;
+    }
+
+    if (sound_timer > 0) {
+        if (sound_timer == 1) {
+            play_sound();
+        }
+        sound_timer -= 1;
+    }
+}
+
+pub fn decode_and_execute() void {
+    switch (opcode & 0xF000) {
+        _ => {
+            std.debug.print("Unknown opcode {x}", .{opcode});
+        },
+    }
+}
+
+pub fn cycle() void {
+    fetch();
+    decode_and_execute();
+    update_timers();
+}
+
 const rl = @import("raylib");
 
 pub fn main() anyerror!void {
