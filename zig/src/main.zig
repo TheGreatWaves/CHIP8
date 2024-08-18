@@ -378,7 +378,31 @@ pub fn decode_and_execute() void {
             }
             // Form: Ex9E - SKP Vx
         },
-        0xF000 => {},
+        0xF000 => {
+            switch (opcode & 0x00FF) {
+                0x07 => {
+                    // Form: Fx07 - LD Vx, DT.
+                    // Set Vx = value of delayer timer.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    V[vx] = delay_timer;
+                    PC += 2;
+                },
+                0x0A => {
+                    // Form: Fx0A - LD Vx, K.
+                    // Wait for a key press, store the value of the key in Vx.
+                    while (true) {
+                        const key_pressed = rl.getKeyPressed();
+
+                        if (key != 0) {
+                            const vx = (opcode & 0x0F00) >> 8;
+                            V[vx] = key_pressed;
+                            break;
+                        }
+                    }
+                },
+            }
+        },
         _ => {
             std.debug.print("Unknown opcode {x}", .{opcode});
             PC += 2;
