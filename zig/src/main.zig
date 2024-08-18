@@ -314,7 +314,7 @@ pub fn decode_and_execute() void {
             PC += 2;
         },
         0xD000 => {
-            // Form: Dxyn.
+            // Form: Dxyn - DRW Vx, Vy, nibble.
             // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 
             // Read n bytes from memory, starting from address in I.
@@ -323,8 +323,31 @@ pub fn decode_and_execute() void {
 
             // Sprites are XORed onto the existing screen.
             // If any pixels were erased (1 -> 0), VF is set to 1, otherwise 0.
-            // If the sprite is positioned in such a way that part of it is outside the screen space, it must wrap around to the
-            // opposite side of the screen.
+
+            // TODO: If the sprite is positioned in such a way that part of it is
+            // outside the screen space, it must wrap around to the opposite side of the screen.
+            const x = V[(opcode & 0x0F00) >> 8];
+            const y = V[(opcode & 0x00F0) >> 4];
+            const n = opcode & 0x000F;
+
+            // Reset flag state.
+            V[0xF] = 0;
+
+            for (0..n) |yline| {
+                const bitmap = memory[I + yline];
+                for (0..8) |xline| {
+                    if ((bitmap & (0x80 >> xline)) != 0) {
+                        const coord = (x + xline) + ((y + yline) * 64);
+                        // Check if the pixel is already set.
+                        if (screen[coord]) {
+                            V[0xF] = 1;
+                        }
+                        screen[coord] = screen[coord] != true;
+                    }
+                }
+            }
+
+            PC += 2;
         },
         0xE000 => {},
         0xF000 => {},
