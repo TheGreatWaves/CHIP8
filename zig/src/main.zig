@@ -349,7 +349,35 @@ pub fn decode_and_execute() void {
 
             PC += 2;
         },
-        0xE000 => {},
+        0xE000 => {
+            switch (opcode & 0x00FF) {
+                0x9E => {
+                    // Form: Ex9E - SKP Vx.
+                    // Skip the next instruction if key with the value of Vx is being pressed.
+                    const x = V[(opcode & 0x0F00) >> 8];
+
+                    if (key[x]) {
+                        PC += 2;
+                    }
+                    PC += 2;
+                },
+                0xA1 => {
+                    // Form: ExA1 - SKNP Vx.
+                    // Skip the next instruction if key with the value of Vx is NOT being pressed.
+                    const x = V[(opcode & 0x0F00) >> 8];
+
+                    if (!key[x]) {
+                        PC += 2;
+                    }
+                    PC += 2;
+                },
+                _ => {
+                    std.debug.print("Unknown opcode {x}", .{opcode});
+                    PC += 2;
+                },
+            }
+            // Form: Ex9E - SKP Vx
+        },
         0xF000 => {},
         _ => {
             std.debug.print("Unknown opcode {x}", .{opcode});
