@@ -400,6 +400,43 @@ pub fn decode_and_execute() void {
                             break;
                         }
                     }
+                    PC += 2;
+                },
+                0x15 => {
+                    // Form: Fx15 - LD DT, Vx.
+                    // Set delay timer = Vx.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    delay_timer = V[vx];
+                    PC += 2;
+                },
+                0x18 => {
+                    // Form: Fx18 - LD ST, Vx.
+                    // Set sound timer = Vx.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    sound_timer = V[vx];
+                    PC += 2;
+                },
+                0x1E => {
+                    // Form: Fx1E - ADD I, Vx.
+                    // Set I = I + Vx.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    I += V[vx];
+                    PC += 2;
+                },
+                0x29 => {
+                    // Form: Fx29 - LD F, Vx.
+                    // Set I = location of sprite for digit Vx.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    I = 0x0050 + (5 * @as(u16, @intCast(V[vx])));
+                    PC += 2;
+                },
+                _ => {
+                    std.debug.print("Unknown opcode {x}", .{opcode});
+                    PC += 2;
                 },
             }
         },
