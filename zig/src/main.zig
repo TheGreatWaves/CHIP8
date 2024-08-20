@@ -434,6 +434,35 @@ pub fn decode_and_execute() void {
                     I = 0x0050 + (5 * @as(u16, @intCast(V[vx])));
                     PC += 2;
                 },
+                0x33 => {
+                    // Form: Fx33 - LD B, Vx.
+                    const vx = (opcode & 0x0F00) >> 8;
+                    const x = V[vx];
+
+                    memory[I + 2] = x % 10;
+                    memory[I + 1] = (x / 10) % 10;
+                    memory[I] = (x / 100) % 10;
+
+                    PC += 2;
+                },
+                0x55 => {
+                    // Form: Fx55 - LD [I], Vx.
+                    // Stores registers V0 through Vx in memory, starting at location I.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    for (0..(vx + 1)) |reg| {
+                        memory[I + reg] = V[reg];
+                    }
+                },
+                0x65 => {
+                    // Form: Fx65 - LD Vx, [I].
+                    // Read registers V0 through Vx from memory starting at location I.
+                    const vx = (opcode & 0x0F00) >> 8;
+
+                    for (0..(vx + 1)) |reg| {
+                        V[reg] = memory[I + reg];
+                    }
+                },
                 _ => {
                     std.debug.print("Unknown opcode {x}", .{opcode});
                     PC += 2;
