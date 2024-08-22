@@ -510,6 +510,14 @@ pub fn cycle() void {
     update_timers();
 }
 
+pub fn draw_screen() void {
+    for (0..32) |y| {
+        for (0..64) |x| {
+            rl.drawRectangle(@intCast(x * 10), @intCast(y * 10), 10, 10, if (screen[x + (y * 64)]) rl.Color.black else rl.Color.white);
+        }
+    }
+}
+
 const rl = @import("raylib");
 
 pub fn main() anyerror!void {
@@ -517,8 +525,8 @@ pub fn main() anyerror!void {
 
     // Initialization
     //--------------------------------------------------------------------------------------
-    const screenWidth = 800;
-    const screenHeight = 450;
+    const screenWidth = 640;
+    const screenHeight = 320;
 
     rl.initWindow(screenWidth, screenHeight, "raylib-zig [core] example - basic window");
     defer rl.closeWindow(); // Close window and OpenGL context
@@ -541,9 +549,9 @@ pub fn main() anyerror!void {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        rl.clearBackground(rl.Color.white);
+        draw_screen();
 
-        rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.light_gray);
+        rl.clearBackground(rl.Color.white);
         //----------------------------------------------------------------------------------
     }
 }
