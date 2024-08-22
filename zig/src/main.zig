@@ -246,10 +246,9 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx + Vy.
                     const vx = (opcode & 0x0F00) >> 8;
                     const vy = (opcode & 0x00F0) >> 4;
-                    const result: u16 = @intCast(V[vx] + V[vy]);
-
-                    V[0xF] = @intCast(@intFromBool(result > 255));
-                    V[vx] = @intCast(result & 0x00FF);
+                    const result: u16 = @as(u16, V[vx]) + @as(u16, V[vy]);
+                    V[vx] = V[vx] +% V[vy];
+                    V[0xF] = @intCast(@intFromBool(V[vx] < result));
                     PC += 2;
                 },
                 0x5 => {
@@ -260,14 +259,14 @@ pub fn decode_and_execute() void {
 
                     // If Vx > Vy, VF = 1.
                     V[0xF] = @intCast(@intFromBool(V[vx] > V[vy]));
-                    V[vx] -= V[vy];
+                    V[vx] = V[vx] -% V[vy];
                     PC += 2;
                 },
                 0x6 => {
                     // Form: 8xy6 - SHR Vx, {, Vy}
                     // Set Vx = Vx SHR 1.
                     // If the least significant bit of Vx is 1, VF = 1.
-                    const vx = (opcode & 0x0F00);
+                    const vx = (opcode & 0x0F00) >> 8;
                     const leastsigbit = V[vx] & 0x01;
 
                     V[0xF] = leastsigbit;
@@ -284,7 +283,7 @@ pub fn decode_and_execute() void {
 
                     // If Vy > Vx, VF = 1.
                     V[0xF] = @intCast(@intFromBool(V[vy] > V[vx]));
-                    V[vx] = V[vy] - V[vx];
+                    V[vx] = V[vy] -% V[vx];
                     PC += 2;
                 },
                 0xE => {
@@ -292,7 +291,7 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx SHL 1.
                     // If the most significant bit of Vx is 1, VF is set to 1.
                     const vx = (opcode & 0x0F00) >> 8;
-                    const sigbit = (V[vx] & 0x80) >> 7;
+                    const sigbit = V[vx] >> 7;
 
                     V[0xF] = sigbit;
                     V[vx] <<= 1;
