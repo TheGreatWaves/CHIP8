@@ -582,37 +582,25 @@ pub fn handle_input() void {
 
 pub fn run_chip8() void {
     while (true) {
+        std.time.sleep(500000);
         cycle();
-    }
-
-    // Note: Uncomment below for fixed timestep.
-
-    // var time_since_last_update: f64 = 0.0;
-    // var time0: f64 = 0;
-    // while (true) {
-    //     while (time_since_last_update > timestep) {
-    //         time_since_last_update -= timestep;
-    //         cycle();
-    //     }
-    //     const time1: f64 = rl.getTime();
-    //     time_since_last_update += (time1 - time0);
-    //     time0 = time1;
-    // }
-}
-
-pub fn update_timers() void {
-    var time_since_last_update: f64 = 0.0;
-    var time0: f64 = 0;
-    while (true) {
-        while (time_since_last_update > timestep) {
-            time_since_last_update -= timestep;
-            tick_timer();
-        }
-        const time1: f64 = rl.getTime();
-        time_since_last_update += (time1 - time0);
-        time0 = time1;
+        tick_timer();
     }
 }
+
+// pub fn update_timers() void {
+//     var time_since_last_update: f64 = 0.0;
+//     var time0: f64 = 0;
+//     while (true) {
+//         while (time_since_last_update > timestep) {
+//             time_since_last_update -= timestep;
+//             tick_timer();
+//         }
+//         const time1: f64 = rl.getTime();
+//         time_since_last_update += (time1 - time0);
+//         time0 = time1;
+//     }
+// }
 
 pub fn main() anyerror!void {
     cstd.srand(@intCast(time.time(0)));
@@ -638,7 +626,7 @@ pub fn main() anyerror!void {
 
     // TODO: Graceful shutdown?
     _ = try std.Thread.spawn(.{}, run_chip8, .{});
-    _ = try std.Thread.spawn(.{}, update_timers, .{});
+    // _ = try std.Thread.spawn(.{}, update_timers, .{});
 
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
