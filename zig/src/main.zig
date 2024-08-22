@@ -421,16 +421,20 @@ pub fn decode_and_execute() void {
                 0x0A => {
                     // Form: Fx0A - LD Vx, K.
                     // Wait for a key press, store the value of the key in Vx.
-                    while (true) {
-                        const key_pressed = @intFromEnum(rl.getKeyPressed());
-
-                        if (key[@intCast(key_pressed)]) {
+                    var found: i32 = -1;
+                    for (key, 0..) |k, key_code| {
+                        if (k) {
                             const vx = (opcode & 0x0F00) >> 8;
-                            V[vx] = @intCast(key_pressed);
+                            V[vx] = @intCast(key_code);
+                            found = @intCast(key_code);
                             break;
                         }
                     }
-                    PC += 2;
+
+                    if (found != -1) {
+                        while (key[@intCast(found)]) {}
+                        PC += 2;
+                    }
                 },
                 0x15 => {
                     // Form: Fx15 - LD DT, Vx.
