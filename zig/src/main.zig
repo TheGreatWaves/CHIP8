@@ -530,6 +530,52 @@ pub fn draw_screen() void {
 
 const rl = @import("raylib");
 
+pub fn handle_input() void {
+    // First row
+    key[0x1] = (rl.isKeyDown(rl.KeyboardKey.key_one));
+    key[0x2] = (rl.isKeyDown(rl.KeyboardKey.key_two));
+    key[0x3] = (rl.isKeyDown(rl.KeyboardKey.key_three));
+    key[0xC] = (rl.isKeyDown(rl.KeyboardKey.key_four));
+
+    // Second row
+    key[0x4] = (rl.isKeyDown(rl.KeyboardKey.key_q));
+    key[0x5] = (rl.isKeyDown(rl.KeyboardKey.key_w));
+    key[0x6] = (rl.isKeyDown(rl.KeyboardKey.key_e));
+    key[0xD] = (rl.isKeyDown(rl.KeyboardKey.key_r));
+
+    // Third row
+    key[0x7] = (rl.isKeyDown(rl.KeyboardKey.key_a));
+    key[0x8] = (rl.isKeyDown(rl.KeyboardKey.key_s));
+    key[0x9] = (rl.isKeyDown(rl.KeyboardKey.key_d));
+    key[0xE] = (rl.isKeyDown(rl.KeyboardKey.key_f));
+
+    // Fourth row
+    key[0xA] = (rl.isKeyDown(rl.KeyboardKey.key_z));
+    key[0x0] = (rl.isKeyDown(rl.KeyboardKey.key_x));
+    key[0xB] = (rl.isKeyDown(rl.KeyboardKey.key_c));
+    key[0xF] = (rl.isKeyDown(rl.KeyboardKey.key_v));
+}
+
+pub fn run_chip8() void {
+    while (true) {
+        cycle();
+    }
+
+    // Note: Uncomment below for fixed timestep.
+
+    // var time_since_last_update: f64 = 0.0;
+    // var time0: f64 = 0;
+    // while (true) {
+    //     while (time_since_last_update > timestep) {
+    //         time_since_last_update -= timestep;
+    //         cycle();
+    //     }
+    //     const time1: f64 = rl.getTime();
+    //     time_since_last_update += (time1 - time0);
+    //     time0 = time1;
+    // }
+}
+
 pub fn main() anyerror!void {
     cstd.srand(@intCast(time.time(0)));
 
@@ -552,13 +598,15 @@ pub fn main() anyerror!void {
         memory[0x200 + i + 1] = f[i + 1];
     }
 
+    _ = try std.Thread.spawn(.{}, run_chip8, .{});
+
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
         // Update
         //----------------------------------------------------------------------------------
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
-        cycle();
+        handle_input();
 
         // Draw
         //----------------------------------------------------------------------------------
