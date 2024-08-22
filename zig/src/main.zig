@@ -39,6 +39,25 @@ var key: [16]bool = undefined;
 // Screen bitmap.
 var screen: [64 * 32]bool = undefined;
 
+const fontset = [_]u8{
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+};
+
 pub fn initialize_chip_8() void {
     I = 0; // Address.
     opcode = 0; // Current opcode.
@@ -66,10 +85,15 @@ pub fn initialize_chip_8() void {
     // Initialize timers.
     delay_timer = 0;
     sound_timer = 0;
+
+    // Initialize fontset.
+    for (0..80) |i| {
+        memory[i] = fontset[i];
+    }
 }
 
 pub fn fetch() void {
-    opcode = (memory[PC] << 8) | memory[PC + 1];
+    opcode = (@as(u16, @intCast(memory[PC])) << 8) | memory[PC + 1];
 }
 
 pub fn play_sound() void {}
@@ -104,7 +128,7 @@ pub fn decode_and_execute() void {
                     PC = stack[sp];
                     sp -= 1;
                 },
-                _ => {
+                else => {
                     // Form: 0nnn - SYS addr
                     // This instruction only used on old computers on which CHIP8 was implemented,
                     // it is ignored by modern interpreters.
@@ -225,7 +249,7 @@ pub fn decode_and_execute() void {
                     const result: u16 = @intCast(V[vx] + V[vy]);
 
                     V[0xF] = @intCast(@intFromBool(result > 255));
-                    V[vx] = result & 0x00FF;
+                    V[vx] = @intCast(result & 0x00FF);
                     PC += 2;
                 },
                 0x5 => {
@@ -274,7 +298,7 @@ pub fn decode_and_execute() void {
                     V[vx] <<= 1;
                     PC += 2;
                 },
-                _ => {
+                else => {
                     std.debug.print("Unknown opcode {x}", .{opcode});
                     PC += 2;
                 },
@@ -307,7 +331,7 @@ pub fn decode_and_execute() void {
             // Generate a random number and perform AND with the value of kk.
             // Results are then stored in Vx.
             const rbyte: u8 = @intCast(@rem(cstd.rand(), 256));
-            const result = rbyte & (opcode & 0x00FF);
+            const result: u8 = @intCast(rbyte & (opcode & 0x00FF));
             const dest = (opcode & 0x0F00) >> 8;
 
             V[dest] = result;
@@ -336,7 +360,7 @@ pub fn decode_and_execute() void {
             for (0..n) |yline| {
                 const bitmap = memory[I + yline];
                 for (0..8) |xline| {
-                    if ((bitmap & (0x80 >> xline)) != 0) {
+                    if ((bitmap & (@as(u8, 0x80) >> @intCast(xline))) != 0) {
                         const coord = (x + xline) + ((y + yline) * 64);
                         // Check if the pixel is already set.
                         if (screen[coord]) {
@@ -371,7 +395,7 @@ pub fn decode_and_execute() void {
                     }
                     PC += 2;
                 },
-                _ => {
+                else => {
                     std.debug.print("Unknown opcode {x}", .{opcode});
                     PC += 2;
                 },
@@ -392,11 +416,11 @@ pub fn decode_and_execute() void {
                     // Form: Fx0A - LD Vx, K.
                     // Wait for a key press, store the value of the key in Vx.
                     while (true) {
-                        const key_pressed = rl.getKeyPressed();
+                        const key_pressed = @intFromEnum(rl.getKeyPressed());
 
-                        if (key != 0) {
+                        if (key[@intCast(key_pressed)]) {
                             const vx = (opcode & 0x0F00) >> 8;
-                            V[vx] = key_pressed;
+                            V[vx] = @intCast(key_pressed);
                             break;
                         }
                     }
@@ -453,6 +477,8 @@ pub fn decode_and_execute() void {
                     for (0..(vx + 1)) |reg| {
                         memory[I + reg] = V[reg];
                     }
+
+                    PC += 2;
                 },
                 0x65 => {
                     // Form: Fx65 - LD Vx, [I].
@@ -462,14 +488,16 @@ pub fn decode_and_execute() void {
                     for (0..(vx + 1)) |reg| {
                         V[reg] = memory[I + reg];
                     }
+
+                    PC += 2;
                 },
-                _ => {
+                else => {
                     std.debug.print("Unknown opcode {x}", .{opcode});
                     PC += 2;
                 },
             }
         },
-        _ => {
+        else => {
             std.debug.print("Unknown opcode {x}", .{opcode});
             PC += 2;
         },
@@ -506,6 +534,7 @@ pub fn main() anyerror!void {
         //----------------------------------------------------------------------------------
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
+        cycle();
 
         // Draw
         //----------------------------------------------------------------------------------
