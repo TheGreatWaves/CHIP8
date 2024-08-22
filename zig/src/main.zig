@@ -88,7 +88,7 @@ pub fn initialize_chip_8() void {
 
     // Initialize fontset.
     for (0..80) |i| {
-        memory[i] = fontset[i];
+        memory[0x50 + i] = fontset[i];
     }
 }
 
