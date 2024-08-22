@@ -40,6 +40,8 @@ var key: [16]bool = undefined;
 var screen: [64 * 32]bool = undefined;
 
 const f = @embedFile("4-flags.ch8");
+// Hz
+const timestep: f64 = 1.0 / 60.0;
 
 const fontset = [_]u8{
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -100,7 +102,7 @@ pub fn fetch() void {
 
 pub fn play_sound() void {}
 
-pub fn update_timers() void {
+pub fn tick_timer() void {
     if (delay_timer > 0) {
         delay_timer -= 1;
     }
@@ -222,6 +224,9 @@ pub fn decode_and_execute() void {
                     const v = (opcode & 0x0F00) >> 8;
                     const vy = (opcode & 0x00F0) >> 4;
 
+                    // Quirk config.
+                    V[0xF] = 0;
+
                     V[v] |= V[vy];
                     PC += 2;
                 },
@@ -231,6 +236,9 @@ pub fn decode_and_execute() void {
                     const vx = (opcode & 0x0F00) >> 8;
                     const vy = (opcode & 0x00F0) >> 4;
 
+                    // Quirk config.
+                    V[0xF] = 0;
+
                     V[vx] &= V[vy];
                     PC += 2;
                 },
@@ -239,6 +247,9 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx ^ Vy.
                     const vx = (opcode & 0x0F00) >> 8;
                     const vy = (opcode & 0x00F0) >> 4;
+
+                    // Quirk config.
+                    V[0xF] = 0;
 
                     V[vx] ^= V[vy];
                     PC += 2;
@@ -272,8 +283,10 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx SHR 1.
                     // If the least significant bit of Vx is 1, VF = 1.
                     const vx = (opcode & 0x0F00) >> 8;
+                    const vy = (opcode & 0x00F0) >> 4;
                     const leastsigbit = V[vx] & 0x1;
 
+                    V[vx] = V[vy];
                     V[vx] >>= 1;
                     V[0xF] = leastsigbit;
                     PC += 2;
@@ -298,8 +311,10 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx SHL 1.
                     // If the most significant bit of Vx is 1, VF is set to 1.
                     const vx = (opcode & 0x0F00) >> 8;
+                    const vy = (opcode & 0x00F0) >> 4;
                     const sigbit = V[vx] >> 7;
 
+                    V[vx] = V[vy];
                     V[vx] <<= 1;
                     V[0xF] = sigbit;
                     PC += 2;
@@ -368,11 +383,15 @@ pub fn decode_and_execute() void {
                 for (0..8) |xline| {
                     if ((bitmap & (@as(u8, 0x80) >> @intCast(xline))) != 0) {
                         const coord = (x + xline) + ((y + yline) * 64);
-                        // Check if the pixel is already set.
-                        if (screen[coord]) {
-                            V[0xF] = 1;
+                        const x_idx = (x + xline);
+                        const y_idx = (y + yline);
+                        if (x_idx >= 0 and x_idx < 64 and y_idx >= 0 and y_idx < 32) {
+                            // Check if the pixel is already set.
+                            if (screen[coord]) {
+                                V[0xF] = 1;
+                            }
+                            screen[coord] = screen[coord] != true;
                         }
-                        screen[coord] = screen[coord] != true;
                     }
                 }
             }
@@ -488,6 +507,9 @@ pub fn decode_and_execute() void {
                         memory[I + reg] = V[reg];
                     }
 
+                    // Quirk config.
+                    I += 1;
+
                     PC += 2;
                 },
                 0x65 => {
@@ -498,6 +520,9 @@ pub fn decode_and_execute() void {
                     for (0..(vx + 1)) |reg| {
                         V[reg] = memory[I + reg];
                     }
+
+                    // Quirk config.
+                    I += 1;
 
                     PC += 2;
                 },
@@ -517,7 +542,6 @@ pub fn decode_and_execute() void {
 pub fn cycle() void {
     fetch();
     decode_and_execute();
-    update_timers();
 }
 
 pub fn draw_screen() void {
@@ -576,6 +600,20 @@ pub fn run_chip8() void {
     // }
 }
 
+pub fn update_timers() void {
+    var time_since_last_update: f64 = 0.0;
+    var time0: f64 = 0;
+    while (true) {
+        while (time_since_last_update > timestep) {
+            time_since_last_update -= timestep;
+            tick_timer();
+        }
+        const time1: f64 = rl.getTime();
+        time_since_last_update += (time1 - time0);
+        time0 = time1;
+    }
+}
+
 pub fn main() anyerror!void {
     cstd.srand(@intCast(time.time(0)));
 
@@ -584,7 +622,7 @@ pub fn main() anyerror!void {
     const screenWidth = 640;
     const screenHeight = 320;
 
-    rl.initWindow(screenWidth, screenHeight, "raylib-zig [core] example - basic window");
+    rl.initWindow(screenWidth, screenHeight, "CHIP8 - zig + raylib");
     defer rl.closeWindow(); // Close window and OpenGL context
 
     rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
@@ -598,7 +636,9 @@ pub fn main() anyerror!void {
         memory[0x200 + i + 1] = f[i + 1];
     }
 
+    // TODO: Graceful shutdown?
     _ = try std.Thread.spawn(.{}, run_chip8, .{});
+    _ = try std.Thread.spawn(.{}, update_timers, .{});
 
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
