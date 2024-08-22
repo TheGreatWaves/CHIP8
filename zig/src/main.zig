@@ -39,6 +39,8 @@ var key: [16]bool = undefined;
 // Screen bitmap.
 var screen: [64 * 32]bool = undefined;
 
+const f = @embedFile("4-flags.ch8");
+
 const fontset = [_]u8{
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -258,8 +260,11 @@ pub fn decode_and_execute() void {
                     const vy = (opcode & 0x00F0) >> 4;
 
                     // If Vx > Vy, VF = 1.
-                    V[0xF] = @intCast(@intFromBool(V[vx] > V[vy]));
-                    V[vx] = V[vx] -% V[vy];
+                    const toggle: u8 = if (V[vx] >= V[vy]) 1 else 0;
+
+                    V[vx] -%= V[vy];
+                    V[0xF] = toggle;
+
                     PC += 2;
                 },
                 0x6 => {
@@ -267,10 +272,10 @@ pub fn decode_and_execute() void {
                     // Set Vx = Vx SHR 1.
                     // If the least significant bit of Vx is 1, VF = 1.
                     const vx = (opcode & 0x0F00) >> 8;
-                    const leastsigbit = V[vx] & 0x01;
+                    const leastsigbit = V[vx] & 0x1;
 
-                    V[0xF] = leastsigbit;
                     V[vx] >>= 1;
+                    V[0xF] = leastsigbit;
                     PC += 2;
                 },
                 0x7 => {
@@ -281,9 +286,11 @@ pub fn decode_and_execute() void {
                     const vx = (opcode & 0x0F00) >> 8;
                     const vy = (opcode & 0x00F0) >> 4;
 
-                    // If Vy > Vx, VF = 1.
-                    V[0xF] = @intCast(@intFromBool(V[vy] > V[vx]));
+                    // If Vy >= Vx,  VF = 1 (no borrow).
+                    const toggle: u8 = if (V[vy] >= V[vx]) 1 else 0;
                     V[vx] = V[vy] -% V[vx];
+
+                    V[0xF] = toggle;
                     PC += 2;
                 },
                 0xE => {
@@ -293,8 +300,8 @@ pub fn decode_and_execute() void {
                     const vx = (opcode & 0x0F00) >> 8;
                     const sigbit = V[vx] >> 7;
 
-                    V[0xF] = sigbit;
                     V[vx] <<= 1;
+                    V[0xF] = sigbit;
                     PC += 2;
                 },
                 else => {
@@ -534,6 +541,12 @@ pub fn main() anyerror!void {
 
     initialize_chip_8();
     //--------------------------------------------------------------------------------------
+
+    var i: u32 = 0;
+    while (i < f.len) : (i += 2) {
+        memory[0x200 + i] = f[i];
+        memory[0x200 + i + 1] = f[i + 1];
+    }
 
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
