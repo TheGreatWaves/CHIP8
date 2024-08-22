@@ -200,7 +200,7 @@ pub fn decode_and_execute() void {
             const vx = (opcode & 0x0F00) >> 8;
             const byte: u8 = @intCast(opcode & 0x00FF);
 
-            V[vx] += byte;
+            V[vx] = V[vx] +% byte;
             PC += 2;
         },
         0x8000 => {
