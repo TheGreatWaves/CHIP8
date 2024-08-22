@@ -125,8 +125,8 @@ pub fn decode_and_execute() void {
                     // Form: 00EE - RET.
                     // Return from subroutine.
                     // Set program counter to the value popped from the stack.
-                    PC = stack[sp];
                     sp -= 1;
+                    PC = stack[sp] + 2;
                 },
                 else => {
                     // Form: 0nnn - SYS addr
@@ -148,8 +148,8 @@ pub fn decode_and_execute() void {
             // Call subroutine at nnn, save current PC onto the stack.
             const nnn = opcode & 0x0FFF;
 
-            sp += 1;
             stack[sp] = PC;
+            sp += 1;
             PC = nnn;
         },
         0x3000 => {
