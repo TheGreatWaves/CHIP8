@@ -3,6 +3,7 @@
 const std = @import("std");
 const time = @cImport(@cInclude("time.h"));
 const cstd = @cImport(@cInclude("stdlib.h"));
+const rl = @import("raylib");
 
 // 35 opcodes, all two bytes long.
 var opcode: u16 = undefined;
@@ -39,7 +40,6 @@ var key: [16]bool = undefined;
 // Screen bitmap.
 var screen: [64 * 32]bool = undefined;
 
-const f = @embedFile("4-flags.ch8");
 // Hz
 const timestep: f64 = 1.0 / 60.0;
 
@@ -552,8 +552,6 @@ pub fn draw_screen() void {
     }
 }
 
-const rl = @import("raylib");
-
 pub fn handle_input() void {
     // First row
     key[0x1] = (rl.isKeyDown(rl.KeyboardKey.key_one));
@@ -588,19 +586,41 @@ pub fn run_chip8() void {
     }
 }
 
-// pub fn update_timers() void {
-//     var time_since_last_update: f64 = 0.0;
-//     var time0: f64 = 0;
-//     while (true) {
-//         while (time_since_last_update > timestep) {
-//             time_since_last_update -= timestep;
-//             tick_timer();
-//         }
-//         const time1: f64 = rl.getTime();
-//         time_since_last_update += (time1 - time0);
-//         time0 = time1;
-//     }
-// }
+pub fn process_file() anyerror!void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    std.log.info("cwd: {s}", .{
+        try std.fs.cwd().realpathAlloc(alloc, "."),
+    });
+
+    // nothing...
+
+    var path_buffer: [std.fs.max_path_bytes]u8 = undefined;
+    const path = try std.fs.realpathZ("snake.ch8", &path_buffer);
+
+    const file = try std.fs.openFileAbsolute(path, .{});
+    defer file.close();
+
+    var buffered_file = std.io.bufferedReader(file.reader());
+    var buffer: [1024]u8 = undefined;
+
+    var offset: u16 = 0;
+
+    while (true) {
+        const bytes_read = try buffered_file.read(&buffer);
+
+        if (bytes_read == 0) {
+            break;
+        }
+
+        for (0..bytes_read) |i| {
+            memory[0x200 + offset] = buffer[i];
+            offset += 1;
+        }
+    }
+}
 
 pub fn main() anyerror!void {
     cstd.srand(@intCast(time.time(0)));
@@ -616,17 +636,13 @@ pub fn main() anyerror!void {
     rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
 
     initialize_chip_8();
-    //--------------------------------------------------------------------------------------
 
-    var i: u32 = 0;
-    while (i < f.len) : (i += 2) {
-        memory[0x200 + i] = f[i];
-        memory[0x200 + i + 1] = f[i + 1];
-    }
+    try process_file();
+
+    //--------------------------------------------------------------------------------------
 
     // TODO: Graceful shutdown?
     _ = try std.Thread.spawn(.{}, run_chip8, .{});
-    // _ = try std.Thread.spawn(.{}, update_timers, .{});
 
     // Main game loop
     while (!rl.windowShouldClose()) { // Detect window close button or ESC key
