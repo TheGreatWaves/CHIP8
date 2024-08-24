@@ -586,19 +586,9 @@ pub fn run_chip8() void {
     }
 }
 
-pub fn process_file() anyerror!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const alloc = arena.allocator();
-
-    std.log.info("cwd: {s}", .{
-        try std.fs.cwd().realpathAlloc(alloc, "."),
-    });
-
-    // nothing...
-
+pub fn process_file(pathname: [*:0]const u8) anyerror!void {
     var path_buffer: [std.fs.max_path_bytes]u8 = undefined;
-    const path = try std.fs.realpathZ("snake.ch8", &path_buffer);
+    const path = try std.fs.realpathZ(pathname, &path_buffer);
 
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
@@ -637,7 +627,7 @@ pub fn main() anyerror!void {
 
     initialize_chip_8();
 
-    try process_file();
+    try process_file("snake.ch8");
 
     //--------------------------------------------------------------------------------------
 
