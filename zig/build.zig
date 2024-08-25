@@ -4,7 +4,7 @@ const rlz = @import("raylib-zig");
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-    
+
     const raylib_dep = b.dependency("raylib-zig", .{
         .target = target,
         .optimize = optimize,
@@ -37,6 +37,9 @@ pub fn build(b: *std.Build) !void {
     exe.root_module.addImport("raylib", raylib);
 
     const run_cmd = b.addRunArtifact(exe);
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
     const run_step = b.step("run", "Run zig");
     run_step.dependOn(&run_cmd.step);
 

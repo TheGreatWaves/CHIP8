@@ -613,6 +613,15 @@ pub fn process_file(pathname: [*:0]const u8) anyerror!void {
 }
 
 pub fn main() anyerror!void {
+
+    // Read in command line.
+    var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    const gpa = allocator.allocator();
+    var args = try std.process.argsWithAllocator(gpa);
+    defer args.deinit();
+
+    _ = args.next();
+
     cstd.srand(@intCast(time.time(0)));
 
     // Initialization
@@ -627,7 +636,13 @@ pub fn main() anyerror!void {
 
     initialize_chip_8();
 
-    try process_file("snake.ch8");
+    if (args.next()) |a| {
+        std.debug.print("ROM: {s}\n", .{a});
+        try process_file(a);
+    } else {
+        std.debug.print("ROM required, please specify a file.\n", .{});
+        return;
+    }
 
     //--------------------------------------------------------------------------------------
 
