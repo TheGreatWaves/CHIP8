@@ -7,3 +7,5 @@ zig/build/
 zig/build-*/
 zig/docgen_tmp/
 zig/.zig-cache
+
+godot/.godot/
