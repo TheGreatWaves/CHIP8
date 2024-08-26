@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b3hu4wegue63d"]
+
+[ext_resource type="Script" path="res://chip8.gd" id="1_ehpru"]
+
+[node name="chip8" type="Node2D"]
+script = ExtResource("1_ehpru")
