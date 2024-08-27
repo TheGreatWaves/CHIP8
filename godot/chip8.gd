@@ -13,6 +13,14 @@ var V: Array[int] = []
 var stack: Array[int] = [] 
 var stack_pointer: int = 0
 
+# Screen.
+var screen: Array[bool] = []
+
+# Set up screen.
+func init_screen():
+	screen.resize(64 * 32)
+	screen.fill(false)
+
 # Set up memory.
 func init_memory():
 	memory.resize(4096)
@@ -33,11 +41,11 @@ func reset_all():
 	init_memory()
 	init_registers()
 	init_stack()
-
+	init_screen()
+	
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	reset_all()
-
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
