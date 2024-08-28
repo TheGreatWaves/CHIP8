@@ -9,12 +9,24 @@ var opcode: int = 0 # Opcode.
 var PC: int  = 0x200 # Program counter
 var V: Array[int] = []
 
+# Timers.
+var delay_timer: int = 0
+var sound_timer: int = 0
+
 # Stack & stack pointer.
 var stack: Array[int] = [] 
 var stack_pointer: int = 0
 
 # Screen.
 var screen: Array[bool] = []
+
+# Key state.
+var keys: Array[bool] = []
+
+# Set up keys.
+func init_keys():
+	keys.resize(16)
+	keys.fill(false)
 
 # Set up screen.
 func init_screen():
@@ -29,6 +41,8 @@ func init_memory():
 func init_registers():
 	I = 0
 	opcode = 0
+	delay_timer = 0
+	sound_timer = 0
 	PC = 0x200
 	V.resize(16)
 	V.fill(0)
@@ -48,5 +62,5 @@ func _ready():
 	reset_all()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
+func _process(_delta):
 	pass
