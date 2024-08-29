@@ -57,10 +57,20 @@ func reset_all():
 	init_stack()
 	init_screen()
 	
+func fetch():
+	opcode = (memory[PC] << 8) | memory[PC + 1]
+	
+func cycle():
+	fetch()
+	# Decode and execute...
+	
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	reset_all()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta):
-	pass
+	# At the moment it's being called every frame, however this can be changed 
+	# to be listening to a signal which gets invoked by a timer so we can have
+	# a fixed time step cycle.
+	cycle()
